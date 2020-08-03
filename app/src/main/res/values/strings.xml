@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Twitter Clone</string>
+    <string name="username_hint">Enter Username</string>
+    <string name="password_hint">Enter Password</string>
+    <string name="button_text">Login / Sign In</string>
+    <string name="password_label">Password</string>
+    <string name="username_label">Username</string>
+</resources>
