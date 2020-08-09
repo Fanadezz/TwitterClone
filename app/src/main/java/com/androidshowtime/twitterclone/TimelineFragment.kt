@@ -4,56 +4,104 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ListView
+import android.widget.SimpleAdapter
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.androidshowtime.twitterclone.databinding.FragmentTimelineBinding
+import com.parse.ParseObject
+import com.parse.ParseQuery
+import com.parse.ParseUser
+import timber.log.Timber
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [TimelineFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class TimelineFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
+    private lateinit var listView: ListView
+    private lateinit var adapter: SimpleAdapter
+    private lateinit var tweetsMap: MutableMap<String, String>
+    private lateinit var tweetsListData: MutableList<MutableMap<String, String>>
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_timeline, container, false)
+                             ): View? {
+        val binding = FragmentTimelineBinding.inflate(inflater)
+
+
+
+        listView = binding.listView
+
+        showTweets()
+        /*val tweetData = mutableListOf<MutableMap<String, String>>()
+
+        for (i in 1..5) {
+
+            val tweetInfo = mutableMapOf<String, String>()
+
+            tweetInfo.put("content", "Tweeet Content $i")
+            tweetInfo.put("username", "User $i")
+
+            tweetData.add(tweetInfo)
+        }
+
+        val simpleAdapter = SimpleAdapter(requireContext(), tweetData, android.R.layout
+                .simple_list_item_2, arrayOf("content", "username"),
+                                          intArrayOf(android.R.id.text1, android.R.id.text2))
+
+        listView.adapter = simpleAdapter*/
+
+        (activity as AppCompatActivity).supportActionBar?.title = "${ParseUser.getCurrentUser()
+                .username}'s Timeline"
+
+
+        return binding.root
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment TimelineFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            TimelineFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+
+    fun showTweets() {
+        // val query = ParseQuery<ParseObject>("Tweet")
+        val query = ParseQuery.getQuery<ParseObject>("Tweet")
+
+
+        query.whereContainedIn("username", ParseUser.getCurrentUser()
+                .getList("followers"))
+        query.orderByDescending("createdAt")
+        //  query.limit = 20
+        query.findInBackground { objects, e ->
+
+
+            if (e == null) {
+
+                tweetsListData = mutableListOf()
+                objects.forEach { parseObject ->
+
+                    tweetsMap = mutableMapOf()
+                    tweetsMap.put("content", parseObject.getString("tweet"))
+
+                    tweetsMap.put("username", parseObject.getString("username"))
+
+                    tweetsListData.add(tweetsMap)
+                    Timber.i(tweetsListData.toString())
                 }
+
+
+
+                adapter = SimpleAdapter(requireContext(), tweetsListData, android.R.layout
+                        .simple_list_item_2, arrayOf("content", "username"),
+                                        intArrayOf(android.R.id.text1, android.R.id.text2))
+                listView.adapter = adapter
+
             }
+            else {
+
+                Toast.makeText(requireContext(), "error occurred ", Toast
+                        .LENGTH_SHORT)
+                        .show()
+            }
+        }
+
+
     }
+
+
 }

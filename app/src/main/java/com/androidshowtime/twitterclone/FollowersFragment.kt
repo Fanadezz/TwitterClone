@@ -1,59 +1,199 @@
 package com.androidshowtime.twitterclone
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
+import com.androidshowtime.twitterclone.databinding.FragmentFollowersBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.parse.ParseObject
+import com.parse.ParseUser
+import timber.log.Timber
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
 
-/**
- * A simple [Fragment] subclass.
- * Use the [FollowersFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class FollowersFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
+    private lateinit var users: MutableList<String>
+    private lateinit var listView: ListView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_followers, container, false)
+                             ): View? {
+        users = mutableListOf()
+        val binding = FragmentFollowersBinding.inflate(inflater)
+
+        val list = mutableListOf("Tony", "Kibe", "Pitaa", "Mosee")
+        val adapter =
+                ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_checked, users)
+        listView = binding.listView
+        getUsers(adapter)
+        listView.adapter = adapter
+
+        listView.setOnItemClickListener { adapterView, view, i, l ->
+
+            val checkedTextView = view as CheckedTextView
+
+            if (checkedTextView.isChecked) {
+
+                ParseUser.getCurrentUser()
+                        .add("followers", users[i])
+
+            }
+            else {
+
+                ParseUser.getCurrentUser()
+                        .getList<String>("followers")
+                        .remove(users[i])
+
+                val tempListView = ParseUser.getCurrentUser()
+                        .getList<String>("followers")
+
+                ParseUser.getCurrentUser()
+                        .getList<String>("followers")
+                        .remove("followers")
+                ParseUser.getCurrentUser()
+                        .put("followers", tempListView)
+            }
+
+            ParseUser.getCurrentUser()
+                    .saveInBackground()
+
+        }
+
+
+
+
+        (activity as AppCompatActivity).supportActionBar?.title =
+                ("${ParseUser.getCurrentUser().username} Pals ")
+
+        setHasOptionsMenu(true)
+
+        return binding.root
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment FollowersFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            FollowersFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+
+    fun getUsers(adapter: ArrayAdapter<String>) {
+        val query = ParseUser.getQuery()
+
+        //hiding the current user
+        query.whereNotEqualTo("username", ParseUser.getCurrentUser().username)
+
+        //sorting users
+        query.orderByAscending("username")
+
+        query.findInBackground { objects, e ->
+
+            if (e == null && objects.size > 0) {
+                objects.forEach { user ->
+                    users.add(user.username)
+
+
+                }
+                adapter.notifyDataSetChanged()
+
+
+
+                users.forEachIndexed {
+
+                        i, user ->
+
+                    if (ParseUser.getCurrentUser()
+                                    .getList<String>("followers")
+                                    .contains(user)) {
+                        listView.setItemChecked(i, true)
+                    }
                 }
             }
+            else {
+
+                Timber.i("Users Error")
+            }
+        }
     }
+
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.menu, menu)
+
+    }
+
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+
+
+            R.id.newTweet -> {
+                sendTweet()
+
+
+            }
+            R.id.timeline -> {
+                findNavController().navigate(
+                    FollowersFragmentDirections.actionFollowersFragmentToTimelineFragment())
+
+            }
+            R.id.logout -> {
+                findNavController().navigate(
+                    FollowersFragmentDirections.actionFollowersFragmentToLoginFragment())
+                ParseUser.logOutInBackground()
+
+            }
+        }
+
+
+
+        return super.onOptionsItemSelected(item)
+    }
+
+    fun sendTweet() {
+        val editText = EditText(requireContext())
+
+
+        val materialAlertDialogBuilder =
+                MaterialAlertDialogBuilder(requireContext()).setTitle("Send a Tweet")
+                        .setView(editText)
+                        .setPositiveButton("Send Tweet") { dialogInterface, i ->
+                            val tweet = editText.text.toString()
+                            if (tweet.isNotBlank()) {
+                                val parseObject = ParseObject("Tweet")
+                                parseObject.put("tweet", tweet)
+
+                                parseObject.put("username", ParseUser.getCurrentUser().username)
+                                parseObject.saveInBackground { e ->
+
+                                    if (e == null) {
+                                        Toast.makeText(requireContext(), "Tweet Sent",
+                                                       Toast.LENGTH_SHORT)
+                                                .show()
+                                    }
+                                    else {
+                                        Toast.makeText(requireContext(), "Failed", Toast
+                                                .LENGTH_SHORT)
+                                                .show()
+                                        Toast.makeText(requireContext(), e.message,
+                                                       Toast.LENGTH_SHORT)
+                                                .show()
+                                    }
+                                }
+                            }
+                            else
+                                Toast.makeText(requireContext(), "Empty Tweet", Toast
+                                        .LENGTH_SHORT)
+                                        .show()
+
+                        }
+                        .setNegativeButton("Cancel") { dialogInterface, i ->
+                            dialogInterface.dismiss()
+                        }
+
+
+        materialAlertDialogBuilder.show()
+
+
+    }
+
+
 }

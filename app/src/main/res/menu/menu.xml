@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/newTweet"
+        android:icon="@drawable/twitter"
+        android:title="New Tweet"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/timeline"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:title="Timeline"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/logout"
+        android:icon="@drawable/quantum_ic_cloud_off_vd_theme_24"
+        android:title="Log Out"
+        app:showAsAction="ifRoom" />
+</menu>
